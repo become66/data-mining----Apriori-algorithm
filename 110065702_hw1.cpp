@@ -2,33 +2,43 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <sstream>
 #include <fstream>
 
 using namespace std;
 
-void getInputFile(ifstream &ifs, vector<string> &transactions){
+void getInputFile(ifstream &ifs, vector<vector<int>> &transactions){
     //get input file
     if (!ifs.is_open()) {
         cout << "Failed to open file.\n";
         exit(EXIT_FAILURE);
     }
+
     string temp;
     while ( getline (ifs,temp) ){
-        transactions.push_back(temp);
+        vector<int> transaction;
+        stringstream ss(temp);
+        while (ss.good()) {
+            string substr;
+            getline(ss, substr, ',');
+            transaction.push_back(stoi(substr));
+        }
+        transactions.push_back(transaction);
     }
     ifs.close();
 }
 
-void writeLineOutputFile(ofstream &ofs, const string &str){
-    ofs<<str<<"\n";
+void writeLineOutputFile(ofstream &ofs){
+
 }
 
 int main(int argc, char *argv[]) {
     double min_support = 0;
-    vector<string> transactions;
+    vector<vector<int>> transactions;
 
     if(argc != 4){
         cout<<"arguments number is wrong!\n";
+        exit(-1);
     }
 
     min_support = stod(argv[1]); //get input minimum support
@@ -37,6 +47,12 @@ int main(int argc, char *argv[]) {
 
     getInputFile(ifs, transactions);
 
+    for(auto v: transactions){
+        for(auto num:v){
+            cout<<num<<" ";
+        }
+        cout<<"\n";
+    }
 
 
 
@@ -46,9 +62,7 @@ int main(int argc, char *argv[]) {
 
 
     //write output file
-    for(auto str: transactions){
-        writeLineOutputFile(ofs, str);
-    }
+
     ofs.close();
     return 0;
 }
