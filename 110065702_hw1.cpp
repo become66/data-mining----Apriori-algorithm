@@ -6,6 +6,7 @@
 #include <fstream>
 #include <unordered_map>
 #include <utility>
+#include <iomanip>
 
 using namespace std;
 
@@ -19,13 +20,20 @@ struct VectorHasher {
     }
 };
 
-void printVec(vector<int> V){
+void printVec(const vector<int> &V){
     for(auto const & i: V){
-        cout<<i<<" ";
+        cout<<i<<",";
     }
 }
 
-int getInputFileAndC1(ifstream &ifs, vector<vector<int>> &transactionTable, unordered_map<vector<int>, int, VectorHasher> &candidateItemset){ // return transactions number
+void writeVec(ofstream &ofs, const vector<int> &V){
+    ofs<<V[0];
+    for(size_t idx = 1; idx < V.size(); ++idx){
+        ofs<<","<<V[idx];
+    }
+}
+
+int getInputFileAndC1(ifstream &ifs, vector<vector<int>> &transactionTable, unordered_map<vector<int>, int, VectorHasher> &itemset){ // return transactions number
     //get input file
     if (!ifs.is_open()) {
         cout << "Failed to open file.\n";
@@ -41,7 +49,7 @@ int getInputFileAndC1(ifstream &ifs, vector<vector<int>> &transactionTable, unor
             getline(ss, substr, ',');
             int item = stoi(substr);
             vector<int> itemVector{item};
-            candidateItemset[itemVector]++;
+            itemset[itemVector]++;
             transaction.push_back(item);
         }
         transactionTable.push_back(transaction);
@@ -51,15 +59,18 @@ int getInputFileAndC1(ifstream &ifs, vector<vector<int>> &transactionTable, unor
     return transactionsCount;
 }
 
-void writeLineOutputFile(ofstream &ofs){
-
+void writeOutputFile(const int &transactionNumber, ofstream &ofs, const unordered_map<vector<int>, int, VectorHasher> &itemset){
+    for(auto &item: itemset){
+        writeVec(ofs, item.first);
+        ofs<<":"<<fixed<<setprecision(4)<<(float)item.second/transactionNumber<<"\n";
+    }
 }
 
-void candidateToLargeItemset(const int & minSupport, unordered_map<vector<int>, int, VectorHasher> &candidateItemset){
+void candidateToLargeItemset(const int & minSupport, unordered_map<vector<int>, int, VectorHasher> &itemset){
     unordered_map<vector<int>, int, VectorHasher>::iterator it;
-    for(it = candidateItemset.begin(); it != candidateItemset.end();){
+    for(it = itemset.begin(); it != itemset.end();){
         if(it->second < minSupport){
-            it = candidateItemset.erase(it);
+            it = itemset.erase(it);
         }
         else{
             ++it;
@@ -81,17 +92,13 @@ int main(int argc, char *argv[]) {
     ifstream ifs(argv[2]);
     ofstream ofs(argv[3]);
 
-    unordered_map<vector<int>, int, VectorHasher> candidateItemset;
-    unordered_map<vector<int>, int, VectorHasher> largeItemset;
-    transactionNumber = getInputFileAndC1(ifs, transactionTable, candidateItemset);
+    unordered_map<vector<int>, int, VectorHasher> itemset;
+    transactionNumber = getInputFileAndC1(ifs, transactionTable, itemset);
     minSupport = minSupportRate*transactionNumber;
     cout<<"minSupprt:"<<minSupport<<"\n";
 
-    candidateToLargeItemset(minSupport, candidateItemset);
-    for(auto &item: candidateItemset){
-        printVec(item.first);
-        cout<<": "<<item.second<<"\n";
-    }
+    candidateToLargeItemset(minSupport, itemset);
+    writeOutputFile(transactionNumber, ofs, itemset);
 
     
 
