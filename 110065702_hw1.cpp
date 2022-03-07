@@ -1,6 +1,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <vector>
+#include <set>
 #include <string>
 #include <sstream>
 #include <fstream>
@@ -10,8 +11,8 @@
 
 using namespace std;
 
-struct VectorHasher {
-    int operator()(const vector<int> &V) const {
+struct SetHasher {
+    int operator()(const set<int> &V) const {
         int hash = V.size();
         for(auto &i : V) {
             hash ^= i + 0x9e3779b9 + (hash << 6) + (hash >> 2);
@@ -20,20 +21,20 @@ struct VectorHasher {
     }
 };
 
-void printVec(const vector<int> &V){
+void printSet(const set<int> &V){
     for(auto const & i: V){
         cout<<i<<",";
     }
 }
 
-void writeVec(ofstream &ofs, const vector<int> &V){
-    ofs<<V[0];
-    for(size_t idx = 1; idx < V.size(); ++idx){
-        ofs<<","<<V[idx];
+void writeSet(ofstream &ofs, const set<int> &S){
+    ofs<<*S.begin();
+    for(auto it = ++S.begin(); it != S.end(); ++it){
+        ofs<<","<<*it;
     }
 }
 
-int getInputFileAndC1(ifstream &ifs, vector<vector<int>> &transactionTable, unordered_map<vector<int>, int, VectorHasher> &itemset){ // return transactions number
+int getInputFileAndC1(ifstream &ifs, vector<set<int>> &transactionTable, unordered_map<set<int>, int, SetHasher> &itemset){ // return transactions number
     //get input file
     if (!ifs.is_open()) {
         cout << "Failed to open file.\n";
@@ -42,15 +43,15 @@ int getInputFileAndC1(ifstream &ifs, vector<vector<int>> &transactionTable, unor
     int transactionsCount = 0;
     string temp;
     while ( getline (ifs,temp) ){
-        vector<int> transaction;
+        set<int> transaction;
         stringstream ss(temp);
         while (ss.good()) {
             string substr;
             getline(ss, substr, ',');
             int item = stoi(substr);
-            vector<int> itemVector{item};
-            itemset[itemVector]++;
-            transaction.push_back(item);
+            set<int> itemSet{item};
+            itemset[itemSet]++;
+            transaction.insert(item);
         }
         transactionTable.push_back(transaction);
         ++transactionsCount;
@@ -59,15 +60,15 @@ int getInputFileAndC1(ifstream &ifs, vector<vector<int>> &transactionTable, unor
     return transactionsCount;
 }
 
-void writeOutputFile(const int &transactionNumber, ofstream &ofs, const unordered_map<vector<int>, int, VectorHasher> &itemset){
+void writeOutputFile(const int &transactionNumber, ofstream &ofs, const unordered_map<set<int>, int, SetHasher> &itemset){
     for(auto &item: itemset){
-        writeVec(ofs, item.first);
+        writeSet(ofs, item.first);
         ofs<<":"<<fixed<<setprecision(4)<<(float)item.second/transactionNumber<<"\n";
     }
 }
 
-void candidateToLargeItemset(const int & minSupport, unordered_map<vector<int>, int, VectorHasher> &itemset){
-    unordered_map<vector<int>, int, VectorHasher>::iterator it;
+void candidateToLargeItemset(const int & minSupport, unordered_map<set<int>, int, SetHasher> &itemset){
+    unordered_map<set<int>, int, SetHasher>::iterator it;
     for(it = itemset.begin(); it != itemset.end();){
         if(it->second < minSupport){
             it = itemset.erase(it);
@@ -81,7 +82,7 @@ void candidateToLargeItemset(const int & minSupport, unordered_map<vector<int>, 
 int main(int argc, char *argv[]) {
     double minSupportRate = 0;
     int transactionNumber = 0, minSupport = 0;
-    vector<vector<int>> transactionTable;
+    vector<set<int>> transactionTable;
 
     if(argc != 4){
         cout<<"arguments number is wrong!\n";
@@ -92,7 +93,7 @@ int main(int argc, char *argv[]) {
     ifstream ifs(argv[2]);
     ofstream ofs(argv[3]);
 
-    unordered_map<vector<int>, int, VectorHasher> itemset;
+    unordered_map<set<int>, int, SetHasher> itemset;
     transactionNumber = getInputFileAndC1(ifs, transactionTable, itemset);
     minSupport = minSupportRate*transactionNumber;
     cout<<"minSupprt:"<<minSupport<<"\n";
