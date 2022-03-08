@@ -175,58 +175,17 @@ int main(int argc, char *argv[]) {
     ofstream ofs(argv[3]);
 
     unordered_map<set<int>, int, SetHasher> itemsetTable;
-    transactionNumber = getInputFileAndC1(ifs, transactionTable, itemsetTable);
+    transactionNumber = getInputFileAndC1(ifs, transactionTable, itemsetTable); //generate C1
     minSupport = minSupportRate*transactionNumber;
-    cout<<"minSupprt:"<<minSupport<<"\n";
+    // cout<<"minSupprt:"<<minSupport<<"\n";
+    candidateToLargeItemset(minSupport, itemsetTable); //generate L1
 
-    candidateToLargeItemset(minSupport, itemsetTable);
-    printItemsetTable(itemsetTable);
-    cout<<"-----------------------------------------\n";
-
-    largeToNextcandidateItemset(itemsetTable);
-    printItemsetTable(itemsetTable);
-    cout<<"-----------------------------------------\n";
-
-    scan(transactionTable, itemsetTable);
-    printItemsetTable(itemsetTable);
-    cout<<"-----------------------------------------\n";
-
-    candidateToLargeItemset(minSupport, itemsetTable);
-    printItemsetTable(itemsetTable);
-    cout<<"-----------------------------------------\n";
-
-    largeToNextcandidateItemset(itemsetTable);
-    printItemsetTable(itemsetTable);
-    cout<<"-----------------------------------------\n";   
-
-    scan(transactionTable, itemsetTable);
-    printItemsetTable(itemsetTable);
-    cout<<"-----------------------------------------\n";    
-    
-    candidateToLargeItemset(minSupport, itemsetTable);
-    printItemsetTable(itemsetTable);
-    cout<<"-----------------------------------------\n";
-
-    largeToNextcandidateItemset(itemsetTable);
-    printItemsetTable(itemsetTable);
-    cout<<"-----------------------------------------\n";   
-
-    scan(transactionTable, itemsetTable);
-    printItemsetTable(itemsetTable);
-    cout<<"-----------------------------------------\n";    
-    
-    candidateToLargeItemset(minSupport, itemsetTable);
-    printItemsetTable(itemsetTable);
-    cout<<"-----------------------------------------\n";    
-
-
-
-
-    
-
-
-
-    //write output file
+    while(!itemsetTable.empty()){
+        writeOutputFile(transactionNumber, ofs, itemsetTable);
+        largeToNextcandidateItemset(itemsetTable);
+        scan(transactionTable, itemsetTable);
+        candidateToLargeItemset(minSupport, itemsetTable);
+    }
 
     ofs.close();
     return 0;
