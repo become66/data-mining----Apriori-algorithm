@@ -9,6 +9,7 @@
 #include <utility>
 #include <iomanip>
 #include <algorithm>
+#include <ctime>
 
 using namespace std;
 
@@ -161,6 +162,13 @@ void printItemsetTable(unordered_map<set<int>, int, SetHasher> &itemsetTable){
 }
 
 int main(int argc, char *argv[]) {
+    clock_t start, End;
+    double cpu_time_used;
+    start = clock();
+
+
+
+
     double minSupportRate = 0;
     int transactionNumber = 0, minSupport = 0;
     vector<set<int>> transactionTable;
@@ -179,8 +187,10 @@ int main(int argc, char *argv[]) {
     minSupport = minSupportRate*transactionNumber;
     // cout<<"minSupprt:"<<minSupport<<"\n";
     candidateToLargeItemset(minSupport, itemsetTable); //generate L1
-
+    int Lcount = 1;
     while(!itemsetTable.empty()){
+        cout<<"L"<<Lcount<<"\n";
+        ++Lcount;
         writeOutputFile(transactionNumber, ofs, itemsetTable);
         largeToNextcandidateItemset(itemsetTable);
         scan(transactionTable, itemsetTable);
@@ -188,5 +198,10 @@ int main(int argc, char *argv[]) {
     }
 
     ofs.close();
+
+
+    End = clock();
+    cpu_time_used = ((double) (End - start)) / CLOCKS_PER_SEC;
+    cout<<"cpu_time_used: "<<cpu_time_used<<"\n";
     return 0;
 }
