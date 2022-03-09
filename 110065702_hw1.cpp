@@ -203,9 +203,9 @@ void scan(vector<vector<set<int>>> &manyTransactionTable, unordered_map<set<int>
 }
 
 int main(int argc, char *argv[]) {
-    clock_t start, End;
-    double cpu_time_used;
-    start = clock();
+    // clock_t start, End;
+    // double cpu_time_used;
+    // start = clock();
 
 
 
@@ -213,7 +213,6 @@ int main(int argc, char *argv[]) {
     double minSupportRate = 0;
     int transactionNumber = 0, minSupport = 0;
     vector<set<int>> transactionTable;
-    vector<set<int>> transactionTable1, transactionTable2;
 
     if(argc != 4){
         cout<<"arguments number is wrong!\n";
@@ -232,10 +231,10 @@ int main(int argc, char *argv[]) {
     minSupport = minSupportRate*transactionNumber;
     // cout<<"minSupprt:"<<minSupport<<"\n";
     candidateToLargeItemset(minSupport, itemsetTable); //generate L1
-    int Lcount = 1;
+    // int Lcount = 1;
     while(!itemsetTable.empty()){
-        cout<<"L"<<Lcount<<"\n";
-        ++Lcount;
+        // cout<<"L"<<Lcount<<"\n";
+        // ++Lcount;
         // printItemsetTable(itemsetTable);
         writeOutputFile(transactionNumber, ofs, itemsetTable);
         largeToNextcandidateItemset(itemsetTable);
@@ -246,8 +245,8 @@ int main(int argc, char *argv[]) {
     ofs.close();
 
 
-    End = clock();
-    cpu_time_used = ((double) (End - start)) / CLOCKS_PER_SEC;
-    cout<<"cpu_time_used: "<<cpu_time_used<<"\n";
+    // End = clock();
+    // cpu_time_used = ((double) (End - start)) / CLOCKS_PER_SEC;
+    // cout<<"cpu_time_used: "<<cpu_time_used<<"\n";
     return 0;
 }
