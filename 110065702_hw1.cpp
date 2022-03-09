@@ -10,8 +10,11 @@
 #include <iomanip>
 #include <algorithm>
 #include <ctime>
+#include <thread>
+#include <mutex>
 
 using namespace std;
+mutex myMutex;
 
 struct SetHasher {
     int operator()(const set<int> &V) const {
@@ -122,20 +125,20 @@ void largeToNextcandidateItemset(unordered_map<set<int>, int, SetHasher> &itemse
                 if(firstItemSet == secondItemSet){
                     firstItemSet.insert(firstEnd);
                     firstItemSet.insert(secondEnd);
+                    candidateItemsetTable[firstItemSet] = 0;
                 }
-                candidateItemsetTable[firstItemSet] = 0;
             }
         }
         //prune
-        unordered_map<set<int>, int, SetHasher>::iterator it;
-        for(it = candidateItemsetTable.begin(); it != candidateItemsetTable.end();){
-            if(canPrune(it->first, itemsetTable)){
-                it = candidateItemsetTable.erase(it);
-            }
-            else{
-                ++it;
-            }
-        }
+        // unordered_map<set<int>, int, SetHasher>::iterator it;
+        // for(it = candidateItemsetTable.begin(); it != candidateItemsetTable.end();){
+        //     if(canPrune(it->first, itemsetTable)){
+        //         it = candidateItemsetTable.erase(it);
+        //     }
+        //     else{
+        //         ++it;
+        //     }
+        // }
     }
     swap(itemsetTable, candidateItemsetTable);
 }
@@ -148,7 +151,9 @@ void scan(vector<set<int>> &transactionTable, unordered_map<set<int>, int, SetHa
     for(auto &itemset: itemsetTable){
         for(auto &transaction: transactionTable){
             if(firstContainSecond(transaction, itemset.first)){
+                myMutex.lock();
                 itemsetTable[itemset.first]++;
+                myMutex.unlock();
             }
         }
     }
@@ -159,6 +164,23 @@ void printItemsetTable(unordered_map<set<int>, int, SetHasher> &itemsetTable){
         printSet(item.first);
         cout<<":"<<item.second<<"\n";
     }
+}
+
+void splitVector(vector<set<int>> &transactionTable, vector<set<int>> &transactionTable1, vector<set<int>> &transactionTable2){
+    size_t const half_size = transactionTable.size() / 2;
+    vector<set<int>> TransactionTable1(transactionTable.begin(), transactionTable.begin() + half_size);
+    swap(transactionTable1, TransactionTable1);
+    vector<set<int>> TransactionTable2(transactionTable.begin() + half_size, transactionTable.end());
+    swap(transactionTable2, TransactionTable2);
+}
+
+
+
+void scanV2(vector<set<int>> &transactionTable1, vector<set<int>> &transactionTable2, unordered_map<set<int>, int, SetHasher> &itemsetTable){
+    thread thread1( scan, ref(transactionTable1), ref(itemsetTable) );
+    thread thread2( scan, ref(transactionTable2), ref(itemsetTable) );
+    thread1.join();
+    thread2.join();
 }
 
 int main(int argc, char *argv[]) {
@@ -172,6 +194,7 @@ int main(int argc, char *argv[]) {
     double minSupportRate = 0;
     int transactionNumber = 0, minSupport = 0;
     vector<set<int>> transactionTable;
+    vector<set<int>> transactionTable1, transactionTable2;
 
     if(argc != 4){
         cout<<"arguments number is wrong!\n";
@@ -184,6 +207,9 @@ int main(int argc, char *argv[]) {
 
     unordered_map<set<int>, int, SetHasher> itemsetTable;
     transactionNumber = getInputFileAndC1(ifs, transactionTable, itemsetTable); //generate C1
+    splitVector(transactionTable, transactionTable1, transactionTable2);
+    transactionTable.clear();
+
     minSupport = minSupportRate*transactionNumber;
     // cout<<"minSupprt:"<<minSupport<<"\n";
     candidateToLargeItemset(minSupport, itemsetTable); //generate L1
@@ -191,9 +217,11 @@ int main(int argc, char *argv[]) {
     while(!itemsetTable.empty()){
         cout<<"L"<<Lcount<<"\n";
         ++Lcount;
+        // printItemsetTable(itemsetTable);
         writeOutputFile(transactionNumber, ofs, itemsetTable);
         largeToNextcandidateItemset(itemsetTable);
-        scan(transactionTable, itemsetTable);
+        // scan(transactionTable, itemsetTable);
+        scanV2(transactionTable1, transactionTable2, itemsetTable);
         candidateToLargeItemset(minSupport, itemsetTable);
     }
 
