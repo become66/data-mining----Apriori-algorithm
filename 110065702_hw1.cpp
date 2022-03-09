@@ -14,6 +14,8 @@
 #include <mutex>
 
 using namespace std;
+#define vectorSplitNum 100
+
 mutex myMutex;
 
 struct SetHasher {
@@ -129,7 +131,7 @@ void largeToNextcandidateItemset(unordered_map<set<int>, int, SetHasher> &itemse
                 }
             }
         }
-        //prune
+        // prune
         // unordered_map<set<int>, int, SetHasher>::iterator it;
         // for(it = candidateItemsetTable.begin(); it != candidateItemsetTable.end();){
         //     if(canPrune(it->first, itemsetTable)){
@@ -147,7 +149,7 @@ bool firstContainSecond(const set<int> &A, const set<int> &B){
     return includes(A.begin(), A.end(), B.begin(), B.end());
 }
 
-void scan(vector<set<int>> &transactionTable, unordered_map<set<int>, int, SetHasher> &itemsetTable){
+void threadScan(vector<set<int>> &transactionTable, unordered_map<set<int>, int, SetHasher> &itemsetTable){
     for(auto &itemset: itemsetTable){
         for(auto &transaction: transactionTable){
             if(firstContainSecond(transaction, itemset.first)){
@@ -166,21 +168,38 @@ void printItemsetTable(unordered_map<set<int>, int, SetHasher> &itemsetTable){
     }
 }
 
-void splitVector(vector<set<int>> &transactionTable, vector<set<int>> &transactionTable1, vector<set<int>> &transactionTable2){
-    size_t const half_size = transactionTable.size() / 2;
-    vector<set<int>> TransactionTable1(transactionTable.begin(), transactionTable.begin() + half_size);
-    swap(transactionTable1, TransactionTable1);
-    vector<set<int>> TransactionTable2(transactionTable.begin() + half_size, transactionTable.end());
-    swap(transactionTable2, TransactionTable2);
+
+template<typename T>
+std::vector<std::vector<T>> SplitVector(const std::vector<T>& vec, size_t n)
+{
+    std::vector<std::vector<T>> outVec;
+
+    size_t length = vec.size() / n;
+    size_t remain = vec.size() % n;
+
+    size_t begin = 0;
+    size_t end = 0;
+
+    for (size_t i = 0; i < std::min(n, vec.size()); ++i)
+    {
+        end += (remain > 0) ? (length + !!(remain--)) : length;
+
+        outVec.push_back(std::vector<T>(vec.begin() + begin, vec.begin() + end));
+
+        begin = end;
+    }
+
+    return outVec;
 }
 
-
-
-void scanV2(vector<set<int>> &transactionTable1, vector<set<int>> &transactionTable2, unordered_map<set<int>, int, SetHasher> &itemsetTable){
-    thread thread1( scan, ref(transactionTable1), ref(itemsetTable) );
-    thread thread2( scan, ref(transactionTable2), ref(itemsetTable) );
-    thread1.join();
-    thread2.join();
+void scan(vector<vector<set<int>>> &manyTransactionTable, unordered_map<set<int>, int, SetHasher> &itemsetTable){
+    thread threads[vectorSplitNum];
+    for (int i = 0; i < vectorSplitNum; i++) {
+        threads[i] = thread(threadScan, ref(manyTransactionTable[i]), ref(itemsetTable));
+    }
+    for (int i = 0; i < vectorSplitNum; i++) {
+        threads[i].join();
+    }   
 }
 
 int main(int argc, char *argv[]) {
@@ -207,7 +226,7 @@ int main(int argc, char *argv[]) {
 
     unordered_map<set<int>, int, SetHasher> itemsetTable;
     transactionNumber = getInputFileAndC1(ifs, transactionTable, itemsetTable); //generate C1
-    splitVector(transactionTable, transactionTable1, transactionTable2);
+    vector<vector<set<int>>> manyTransactionTable = SplitVector(transactionTable, vectorSplitNum);
     transactionTable.clear();
 
     minSupport = minSupportRate*transactionNumber;
@@ -220,8 +239,7 @@ int main(int argc, char *argv[]) {
         // printItemsetTable(itemsetTable);
         writeOutputFile(transactionNumber, ofs, itemsetTable);
         largeToNextcandidateItemset(itemsetTable);
-        // scan(transactionTable, itemsetTable);
-        scanV2(transactionTable1, transactionTable2, itemsetTable);
+        scan(manyTransactionTable , itemsetTable);
         candidateToLargeItemset(minSupport, itemsetTable);
     }
 
