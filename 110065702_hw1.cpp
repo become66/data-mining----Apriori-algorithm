@@ -173,6 +173,10 @@ template<typename T>
 std::vector<std::vector<T>> SplitVector(const std::vector<T>& vec, size_t n)
 {
     std::vector<std::vector<T>> outVec;
+    if(vec.size() < vectorSplitNum){
+        outVec.push_back(vec);
+        return outVec;
+    }
 
     size_t length = vec.size() / n;
     size_t remain = vec.size() % n;
@@ -193,11 +197,12 @@ std::vector<std::vector<T>> SplitVector(const std::vector<T>& vec, size_t n)
 }
 
 void scan(vector<vector<set<int>>> &manyTransactionTable, unordered_map<set<int>, int, SetHasher> &itemsetTable){
-    thread threads[vectorSplitNum];
-    for (int i = 0; i < vectorSplitNum; i++) {
+    int transactionTableNum = manyTransactionTable.size();
+    thread threads[transactionTableNum];
+    for (int i = 0; i < transactionTableNum; i++) {
         threads[i] = thread(threadScan, ref(manyTransactionTable[i]), ref(itemsetTable));
     }
-    for (int i = 0; i < vectorSplitNum; i++) {
+    for (int i = 0; i < transactionTableNum; i++) {
         threads[i].join();
     }   
 }
