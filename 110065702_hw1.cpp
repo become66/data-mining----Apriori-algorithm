@@ -14,7 +14,7 @@
 #include <mutex>
 
 using namespace std;
-#define vectorSplitNum 100
+int vectorSplitNum =  100;
 
 mutex myMutex;
 
@@ -150,15 +150,29 @@ bool firstContainSecond(const set<int> &A, const set<int> &B){
 }
 
 void threadScan(vector<set<int>> &transactionTable, unordered_map<set<int>, int, SetHasher> &itemsetTable){
-    for(auto &itemset: itemsetTable){
-        for(auto &transaction: transactionTable){
-            if(firstContainSecond(transaction, itemset.first)){
-                myMutex.lock();
-                itemsetTable[itemset.first]++;
-                myMutex.unlock();
+    if(vectorSplitNum < 95000){
+        for(auto &itemset: itemsetTable){
+            for(auto &transaction: transactionTable){
+                if(firstContainSecond(transaction, itemset.first)){
+                    myMutex.lock();
+                    itemsetTable[itemset.first]++;
+                    myMutex.unlock();
+                }
             }
         }
     }
+    else{
+        for(auto &itemset: itemsetTable){
+            for(auto &transaction: transactionTable){
+                if(firstContainSecond(transaction, itemset.first)){
+                    // myMutex.lock();
+                    itemsetTable[itemset.first]++;
+                    // myMutex.unlock();
+                }
+            }
+        }        
+    }
+
 }
 
 void printItemsetTable(unordered_map<set<int>, int, SetHasher> &itemsetTable){
@@ -173,10 +187,6 @@ template<typename T>
 std::vector<std::vector<T>> SplitVector(const std::vector<T>& vec, size_t n)
 {
     std::vector<std::vector<T>> outVec;
-    if(vec.size() < vectorSplitNum){
-        outVec.push_back(vec);
-        return outVec;
-    }
 
     size_t length = vec.size() / n;
     size_t remain = vec.size() % n;
@@ -230,6 +240,12 @@ int main(int argc, char *argv[]) {
 
     unordered_map<set<int>, int, SetHasher> itemsetTable;
     transactionNumber = getInputFileAndC1(ifs, transactionTable, itemsetTable); //generate C1
+    if(transactionNumber < vectorSplitNum){
+        vectorSplitNum = 1;
+    }
+    if(transactionNumber > 95000){
+        vectorSplitNum = 3000;
+    }
     vector<vector<set<int>>> manyTransactionTable = SplitVector(transactionTable, vectorSplitNum);
     transactionTable.clear();
 
